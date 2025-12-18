@@ -1,6 +1,4 @@
 import { Button, Form, Select, Input, InputNumber } from 'antd';
-import { useState, useEffect } from 'react';
-import axios from 'axios';
 
 export default function AddBook(props) {
 

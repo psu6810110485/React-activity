@@ -14,8 +14,8 @@ export default function LoginScreen(props) {
       setErrMsg(null)
       const response = await axios.post(URL_AUTH, formData);
       const token = response.data.access_token;
-      axios.defaults.headers.common = { 'Authorization': `bearer ${token}` }
-      props.onLoginSuccess();
+      axios.defaults.headers.common.Authorization = `Bearer ${token}`
+      props.onLoginSuccess?.();
     } catch(err) { 
       console.log(err)
       setErrMsg(err.message)

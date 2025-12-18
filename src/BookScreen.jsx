@@ -9,7 +9,7 @@ import EditBook from './components/EditBook';
 const URL_BOOK = "/api/book"
 const URL_CATEGORY = "/api/book-category"
 
-function BookScreen() {
+export default function BookScreen() {
   const [bookData, setBookData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState([]);
@@ -17,8 +17,8 @@ function BookScreen() {
 
   const fetchCategories = async () => {
     try {
-      const response = await axios.get(URL_CATEGORY);
-      setCategories(response.data.map(cat => ({
+      const { data } = await axios.get(URL_CATEGORY);
+      setCategories(data.map(cat => ({
         label: cat.name,
         value: cat.id
       })));
@@ -30,8 +30,8 @@ function BookScreen() {
   const fetchBooks = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(URL_BOOK);
-      setBookData(response.data);
+      const { data } = await axios.get(URL_BOOK);
+      setBookData(data);
     } catch (error) {
       console.error('Error fetching books:', error);
     } finally {
@@ -42,7 +42,7 @@ function BookScreen() {
   const handleAddBook = async (book) => {
     setLoading(true)
     try {
-      const response = await axios.post(URL_BOOK, book);
+      await axios.post(URL_BOOK, book);
       fetchBooks();
     } catch (error) {
       console.error('Error adding book:', error);
@@ -54,7 +54,7 @@ function BookScreen() {
   const handleLikeBook = async (book) => {
     setLoading(true)
     try {
-      const response = await axios.patch(URL_BOOK + `/${book.id}`, { likeCount: book.likeCount + 1 });
+      await axios.patch(URL_BOOK + `/${book.id}`, { likeCount: book.likeCount + 1 });
       fetchBooks();
     } catch (error) {
       console.error('Error liking book:', error);
@@ -66,7 +66,7 @@ function BookScreen() {
   const handleDeleteBook = async (bookId) => {
     setLoading(true)
     try {
-      const response = await axios.delete(URL_BOOK + `/${bookId}`);
+      await axios.delete(URL_BOOK + `/${bookId}`);
       fetchBooks();
     } catch (error) {
       console.error('Error deleting book:', error);
@@ -75,12 +75,15 @@ function BookScreen() {
     }
   }
 
-  const handleEditBook = async (book) => {
+  const updateBook = async (book) => {
     setLoading(true)
     try {
-      const editedData = {...book, 'price': Number(book.price), 'stock': Number(book.stock)}
-      const {id, category, createdAt, updatedAt, ...data} = editedData
-      const response = await axios.patch(URL_BOOK + `/${id}`, data);
+      const editedData = { ...book, price: Number(book.price), stock: Number(book.stock) }
+      const { id, ...data } = editedData
+      delete data.category
+      delete data.createdAt
+      delete data.updatedAt
+      await axios.patch(URL_BOOK + `/${id}`, data);
       fetchBooks();
     } catch (error) {
       console.error('Error editing book:', error);
@@ -112,13 +115,11 @@ function BookScreen() {
         />
       </Spin>
       <EditBook 
-        book={editBook} 
+        item={editBook} 
         categories={categories} 
-        open={editBook !== null} 
+        isOpen={editBook !== null} 
         onCancel={() => setEditBook(null)} 
-        onSave={handleEditBook} />
+        onSave={(formData) => updateBook({ ...editBook, ...formData })} />
     </>
   )
 }
-
-export default BookScreen
