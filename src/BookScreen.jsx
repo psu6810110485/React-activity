@@ -1,10 +1,11 @@
 import './App.css'
 import { useState, useEffect } from 'react';
-import { Divider, Spin } from 'antd';
+import { Divider, Spin, Modal, Input, Button } from 'antd';
 import axios from 'axios'
 import BookList from './components/BookList'
 import AddBook from './components/AddBook';
 import EditBook from './components/EditBook';
+import { askGeminiAboutBook } from './services/gemini';
 
 const URL_BOOK = "/api/book"
 const URL_CATEGORY = "/api/book-category"
@@ -14,6 +15,12 @@ export default function BookScreen() {
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState([]);
   const [editBook, setEditBook] = useState(null);
+
+  const [geminiOpen, setGeminiOpen] = useState(false)
+  const [geminiBook, setGeminiBook] = useState(null)
+  const [geminiQuestion, setGeminiQuestion] = useState('')
+  const [geminiAnswer, setGeminiAnswer] = useState('')
+  const [geminiLoading, setGeminiLoading] = useState(false)
 
   const fetchCategories = async () => {
     try {
@@ -98,6 +105,33 @@ export default function BookScreen() {
     fetchBooks();
   }, []);
 
+  const openGemini = (book) => {
+    setGeminiBook(book)
+    setGeminiQuestion('ถามอะไรก็ได้ครับเกี่ยวกับหนังสือเล่มนี้')
+    setGeminiAnswer('')
+    setGeminiOpen(true)
+  }
+
+  const closeGemini = () => {
+    setGeminiOpen(false)
+    setGeminiBook(null)
+    setGeminiLoading(false)
+  }
+
+  const askGemini = async () => {
+    if (!geminiBook) return
+    setGeminiLoading(true)
+    try {
+      const text = await askGeminiAboutBook(geminiBook, geminiQuestion)
+      setGeminiAnswer(text)
+    } catch (error) {
+      const msg = error?.message || 'Failed to call Gemini'
+      setGeminiAnswer(msg)
+    } finally {
+      setGeminiLoading(false)
+    }
+  }
+
   return (
     <>
       <div style={{ display: "flex", justifyContent: "center", marginBottom: "2em" }}>
@@ -112,6 +146,7 @@ export default function BookScreen() {
           onLiked={handleLikeBook}
           onDeleted={handleDeleteBook}
           onEdit={book => setEditBook(book)}
+          onAskGemini={openGemini}
         />
       </Spin>
       <EditBook 
@@ -120,6 +155,35 @@ export default function BookScreen() {
         isOpen={editBook !== null} 
         onCancel={() => setEditBook(null)} 
         onSave={(formData) => updateBook({ ...editBook, ...formData })} />
+
+      <Modal
+        title={geminiBook ? `Gemini: ${geminiBook.title}` : 'Gemini'}
+        open={geminiOpen}
+        onCancel={closeGemini}
+        onOk={askGemini}
+        okText="Ask"
+        confirmLoading={geminiLoading}
+        cancelText="Close"
+      >
+        <Input.TextArea
+          rows={4}
+          value={geminiQuestion}
+          onChange={(e) => setGeminiQuestion(e.target.value)}
+          placeholder="Ask Gemini about this book..."
+        />
+
+        <div style={{ marginTop: 12 }}>
+          <Button onClick={askGemini} loading={geminiLoading}>Ask</Button>
+        </div>
+
+        <Input.TextArea
+          rows={8}
+          style={{ marginTop: 12 }}
+          value={geminiAnswer}
+          readOnly
+          placeholder="Gemini answer will appear here..."
+        />
+      </Modal>
     </>
   )
 }
