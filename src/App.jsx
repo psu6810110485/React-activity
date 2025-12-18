@@ -1,7 +1,8 @@
 import './App.css'
 import axios from 'axios'
 import { useEffect, useState } from 'react'
-import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
+import { Button, Layout, Menu } from 'antd'
+import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import LoginScreen from './LoginScreen'
 import BookScreen from './BookScreen'
 
@@ -21,6 +22,32 @@ const clearStoredToken = () => {
 function RequireAuth({ isAuthenticated, children }) {
   if (!isAuthenticated) return <Navigate to="/login" replace />
   return children
+}
+
+function AppShell({ onLogout, children }) {
+  const location = useLocation()
+
+  const selectedKey = location.pathname.startsWith('/books') ? 'books' : ''
+
+  return (
+    <Layout style={{ minHeight: '100vh' }}>
+      <Layout.Header style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ flex: 1 }}>
+          <Menu
+            theme="dark"
+            mode="horizontal"
+            selectedKeys={selectedKey ? [selectedKey] : []}
+            items={[{ key: 'books', label: 'Books' }]}
+          />
+        </div>
+        <Button onClick={onLogout}>Logout</Button>
+      </Layout.Header>
+
+      <Layout.Content style={{ padding: 16 }}>
+        {children}
+      </Layout.Content>
+    </Layout>
+  )
 }
 
 function App() {
@@ -58,6 +85,13 @@ function App() {
     navigate('/books', { replace: true })
   }
 
+  const handleLogout = () => {
+    clearStoredToken()
+    delete axios.defaults.headers.common.Authorization
+    setIsAuthenticated(false)
+    navigate('/login', { replace: true })
+  }
+
   return (
     <Routes>
       <Route
@@ -68,7 +102,9 @@ function App() {
         path="/books"
         element={
           <RequireAuth isAuthenticated={isAuthenticated}>
-            <BookScreen />
+            <AppShell onLogout={handleLogout}>
+              <BookScreen />
+            </AppShell>
           </RequireAuth>
         }
       />
