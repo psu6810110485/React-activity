@@ -5,6 +5,7 @@ import { Button, Layout, Menu } from 'antd'
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import LoginScreen from './LoginScreen'
 import BookScreen from './BookScreen'
+import DashboardScreen from './DashboardScreen'
 
 axios.defaults.baseURL = "http://localhost:3000"
 
@@ -26,8 +27,13 @@ function RequireAuth({ isAuthenticated, children }) {
 
 function AppShell({ onLogout, children }) {
   const location = useLocation()
+  const navigate = useNavigate()
 
-  const selectedKey = location.pathname.startsWith('/books') ? 'books' : ''
+  const selectedKey = location.pathname.startsWith('/dashboard')
+    ? 'dashboard'
+    : location.pathname.startsWith('/books')
+      ? 'books'
+      : ''
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -37,7 +43,10 @@ function AppShell({ onLogout, children }) {
             theme="dark"
             mode="horizontal"
             selectedKeys={selectedKey ? [selectedKey] : []}
-            items={[{ key: 'books', label: 'Books' }]}
+            items={[
+              { key: 'books', label: 'Books', onClick: () => navigate('/books') },
+              { key: 'dashboard', label: 'Dashboard', onClick: () => navigate('/dashboard') },
+            ]}
           />
         </div>
         <Button onClick={onLogout}>Logout</Button>
@@ -104,6 +113,17 @@ function App() {
           <RequireAuth isAuthenticated={isAuthenticated}>
             <AppShell onLogout={handleLogout}>
               <BookScreen />
+            </AppShell>
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/dashboard"
+        element={
+          <RequireAuth isAuthenticated={isAuthenticated}>
+            <AppShell onLogout={handleLogout}>
+              <DashboardScreen />
             </AppShell>
           </RequireAuth>
         }
