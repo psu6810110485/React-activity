@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Button, Form, Input, Alert } from 'antd';
+import { Button, Form, Input, Alert, Checkbox } from 'antd';
 import axios from 'axios'
 
 const URL_AUTH = "/api/auth/login"
+const TOKEN_KEY = "access_token"
 
 export default function LoginScreen(props) {
   const [isLoading, setIsLoading] = useState(false)
@@ -12,8 +13,17 @@ export default function LoginScreen(props) {
     try{
       setIsLoading(true)
       setErrMsg(null)
-      const response = await axios.post(URL_AUTH, formData);
+      const { remember, ...credentials } = formData
+      const response = await axios.post(URL_AUTH, credentials);
       const token = response.data.access_token;
+      if (remember) {
+        localStorage.setItem(TOKEN_KEY, token)
+        sessionStorage.removeItem(TOKEN_KEY)
+      } else {
+        sessionStorage.setItem(TOKEN_KEY, token)
+        localStorage.removeItem(TOKEN_KEY)
+      }
+
       axios.defaults.headers.common.Authorization = `Bearer ${token}`
       props.onLoginSuccess?.();
     } catch(err) { 
@@ -44,6 +54,10 @@ export default function LoginScreen(props) {
         name="password"
         rules={[{required: true},]}>
         <Input.Password />
+      </Form.Item>
+
+      <Form.Item name="remember" valuePropName="checked" initialValue={false}>
+        <Checkbox>Remember Me</Checkbox>
       </Form.Item>
 
       <Form.Item>
